@@ -33,9 +33,12 @@ namespace beam
 		static const uint32_t s_Inf = (s_MaxOrder + 1) << s_MantissaBits;
 
 		bool IsTargetReached(const ECC::uintBig&) const;
-//		bool get_Target(ECC::uintBig&) const; // more expensive to calculate. Use to test many variants for the same target
+		bool get_Target(ECC::uintBig&) const; // more expensive to calculate. Use to test many variants for the same target
 
 		void Unpack(Raw&) const;
+		void Pack(const Raw&);
+		void Pack(uint64_t number);
+		void Pack(double number);
 
 		void Unpack(uint32_t& order, uint32_t& mantissa) const;
 		void Pack(uint32_t order, uint32_t mantissa);
@@ -48,7 +51,7 @@ namespace beam
 		friend Raw& operator -= (Raw&, const Difficulty&);
 
 		double ToFloat() const;
-		static double ToFloat(Raw&);
+		static double ToFloat(const Raw&);
 
 		struct BigFloat;
 
