@@ -18,38 +18,40 @@
 
 namespace beam
 {
-	struct Block
+struct Block
+{
+	// Different parts of the block are split into different structs, so that they can be manipulated (transferred, processed, saved and etc.) independently
+	// For instance, there is no need to keep PoW (at least in SPV client) once it has been validated.
+
+	struct PoW
 	{
-		// Different parts of the block are split into different structs, so that they can be manipulated (transferred, processed, saved and etc.) independently
-		// For instance, there is no need to keep PoW (at least in SPV client) once it has been validated.
+		// equihash parameters.
+		// Parameters recommended by BTG are 144/5, to make it asic-resistant (~1GB average, spikes about 1.5GB). On CPU solve time about 1 minutes
+		// The following are the parameters for testnet, to make it of similar size, and much faster solve time, to test concurrency and difficulty adjustment
+		static const uint32_t N = 150;
+		static const uint32_t K = 5;
 
-		struct PoW
-		{
-			// equihash parameters. 
-			// Parameters recommended by BTG are 144/5, to make it asic-resistant (~1GB average, spikes about 1.5GB). On CPU solve time about 1 minutes
-			// The following are the parameters for testnet, to make it of similar size, and much faster solve time, to test concurrency and difficulty adjustment
-			static const uint32_t N = 150;
-			static const uint32_t K = 5;
+		static const uint32_t nNumIndices = 1 << K;						 // 32
+		static const uint32_t nBitsPerIndex = N / (K + 1) + 1; // 26
 
-			static const uint32_t nNumIndices		= 1 << K; // 32
-			static const uint32_t nBitsPerIndex		= N / (K + 1) + 1; // 26
+		static const uint32_t nSolutionBits = nNumIndices * nBitsPerIndex; // 832 bits
 
-			static const uint32_t nSolutionBits		= nNumIndices * nBitsPerIndex; // 832 bits
+		static_assert(!(nSolutionBits & 7), "PoW solution should be byte-aligned");
+		static const uint32_t nSolutionBytes = nSolutionBits >> 3; // 104 bytes
 
-			static_assert(!(nSolutionBits & 7), "PoW solution should be byte-aligned");
-			static const uint32_t nSolutionBytes	= nSolutionBits >> 3; // 104 bytes
+		std::array<uint8_t, nSolutionBytes> m_Indices;
 
-			std::array<uint8_t, nSolutionBytes>	m_Indices;
+		typedef uintBig_t<8> NonceType;
+		NonceType m_Nonce; // 8 bytes. The overall solution size is 96 bytes.
+		Difficulty m_Difficulty;
 
-			typedef uintBig_t<8> NonceType;
-			NonceType m_Nonce; // 8 bytes. The overall solution size is 96 bytes.
-			Difficulty m_Difficulty;
+		bool IsValidSolution(const void *pInput, uint32_t nSizeInput, uint32_t hashVersion) const;
+		bool IsValid(const void *pInput, uint32_t nSizeInput, uint32_t) const;
+		bool ComputeHash(const void *pInput, uint32_t nSizeInput, ECC::Hash::Value &hv, uint32_t) const;
+		int verifySolution(const char *input, const char *nonce, const char *output) const;
 
-			bool IsValid(const void* pInput, uint32_t nSizeInput) const;
-			bool IsValidSolution(const void* pInput, uint32_t nSizeInput) const;
-
-		private:
-			struct Helper;
-		};
+	private:
+		struct Helper;
 	};
-}
+};
+} // namespace beam
